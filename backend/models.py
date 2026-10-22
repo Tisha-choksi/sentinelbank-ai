@@ -1,13 +1,17 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from typing import Any
+
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
     Numeric,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -195,6 +199,11 @@ class Alert(Base):
         String(512),
         nullable=False,
     )
+    evidence: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -212,6 +221,11 @@ class Alert(Base):
         CheckConstraint(
             "status IN ('OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED')",
             name="ck_alerts_status",
+        ),
+        UniqueConstraint(
+            "transaction_id",
+            "rule_code",
+            name="uq_alerts_transaction_rule",
         ),
     )
 
