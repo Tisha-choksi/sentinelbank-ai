@@ -424,6 +424,7 @@ def gen_missing_account_records(rng: random.Random, index: int) -> ScenarioSpec:
                 "assume they're legitimate or fraudulent."
             ),
             "expected_uncertainty_keywords": ["account registry"],
+            "expected_uncertainty_concepts": _expand_uncertainty_concepts(["account registry"]),
             "notes": "Every account referenced is unregistered by design.",
         }
     )

@@ -30,6 +30,11 @@ class ScenarioResult:
     facts_total: int = 0
     uncertainty_hit: int = 0
     uncertainty_total: int = 0
+    # v2: synonym-aware, checked across uncertainties + recommended_checks +
+    # summary together -- see score_result(). Kept alongside the v1 fields
+    # (never replacing them) so historical results stay comparable.
+    uncertainty_hit_v2: int = 0
+    uncertainty_total_v2: int = 0
     forbidden_claim_violated: bool = False
 
     @property
@@ -55,15 +60,25 @@ def score_result(
     summary = str(findings.get("summary", "") or "")
     confirmed_facts = [str(x) for x in findings.get("confirmed_facts", [])]
     uncertainties = [str(x) for x in findings.get("uncertainties", [])]
+    recommended_checks = [str(x) for x in findings.get("recommended_checks", [])]
     cited_refs = [str(x) for x in findings.get("cited_transaction_refs", [])]
     cited_accounts = [str(x) for x in findings.get("cited_accounts", [])]
 
     confirmed_text = " ".join([summary, *confirmed_facts]).lower()
     uncertainty_text = " ".join(uncertainties).lower()
+    # v2 looks across every field a model might reasonably put a caveat in,
+    # not just `uncertainties` -- a model that puts "verify the account
+    # registry" in recommended_checks has still surfaced the gap.
+    uncertainty_text_v2 = " ".join([summary, *uncertainties, *recommended_checks]).lower()
 
     facts_hit = sum(1 for f in scenario.expected_facts if f.lower() in confirmed_text)
     uncertainty_hit = sum(
         1 for k in scenario.expected_uncertainty_keywords if k.lower() in uncertainty_text
+    )
+    uncertainty_hit_v2 = sum(
+        1
+        for concept in scenario.expected_uncertainty_concepts
+        if any(synonym.lower() in uncertainty_text_v2 for synonym in concept)
     )
     forbidden_hit = any(
         k.lower() in confirmed_text for k in scenario.forbidden_claim_keywords
@@ -83,6 +98,8 @@ def score_result(
         facts_total=len(scenario.expected_facts),
         uncertainty_hit=uncertainty_hit,
         uncertainty_total=len(scenario.expected_uncertainty_keywords),
+        uncertainty_hit_v2=uncertainty_hit_v2,
+        uncertainty_total_v2=len(scenario.expected_uncertainty_concepts),
         forbidden_claim_violated=forbidden_hit,
     )
 
@@ -157,6 +174,13 @@ def aggregate(results: list[ScenarioResult], scenarios: list[ScenarioSpec]) -> d
         if uncertainty_scored
         else None
     )
+    uncertainty_scored_v2 = [r for r in quality_results if r.uncertainty_total_v2 > 0]
+    uncertainty_hit_rate_v2 = (
+        sum(r.uncertainty_hit_v2 / r.uncertainty_total_v2 for r in uncertainty_scored_v2)
+        / len(uncertainty_scored_v2)
+        if uncertainty_scored_v2
+        else None
+    )
     forbidden_claim_violations = [r for r in results if r.forbidden_claim_violated]
 
     # --- 4. Latency & reliability ---
@@ -212,6 +236,7 @@ def aggregate(results: list[ScenarioResult], scenarios: list[ScenarioSpec]) -> d
         "factual_accuracy": {
             "facts_hit_rate": facts_hit_rate,
             "uncertainty_hit_rate": uncertainty_hit_rate,
+            "uncertainty_hit_rate_v2": uncertainty_hit_rate_v2,
             "forbidden_claim_violation_count": len(forbidden_claim_violations),
             "forbidden_claim_violation_scenarios": [
                 r.scenario_id for r in forbidden_claim_violations
