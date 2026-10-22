@@ -212,6 +212,10 @@ class Alert(Base):
 
     transaction: Mapped["Transaction"] = relationship(back_populates="alerts")
     case: Mapped["InvestigationCase | None"] = relationship(back_populates="alerts")
+    reports: Mapped[list["InvestigationReport"]] = relationship(
+        back_populates="alert",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -226,6 +230,80 @@ class Alert(Base):
             "transaction_id",
             "rule_code",
             name="uq_alerts_transaction_rule",
+        ),
+    )
+
+
+class InvestigationReport(Base):
+    """A single AI-investigation run over an alert. Each rerun creates a new
+    row rather than overwriting a previous one, so report history, the
+    model/version used, and the exact evidence it saw are all reproducible.
+    """
+
+    __tablename__ = "investigation_reports"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    alert_id: Mapped[int] = mapped_column(
+        ForeignKey("alerts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    case_id: Mapped[int | None] = mapped_column(
+        ForeignKey("investigation_cases.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="PENDING_REVIEW",
+    )
+    model_provider: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    model_name: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+    )
+    summary: Mapped[str] = mapped_column(
+        String(2048),
+        nullable=False,
+    )
+    findings: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+    evidence_snapshot: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    reviewed_by: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+    )
+
+    alert: Mapped["Alert"] = relationship(back_populates="reports")
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('PENDING_REVIEW', 'APPROVED', 'DISMISSED', 'ESCALATED', 'FAILED')",
+            name="ck_investigation_reports_status",
         ),
     )
 

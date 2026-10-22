@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 import models
 from api.alerts import router as alerts_router
+from api.investigations import router as investigations_router
 from db import Base, engine, get_db
 from detection import service
 
@@ -30,6 +31,7 @@ app = FastAPI(
 )
 
 app.include_router(alerts_router)
+app.include_router(investigations_router)
 
 DbSession = Annotated[Session, Depends(get_db)]
 

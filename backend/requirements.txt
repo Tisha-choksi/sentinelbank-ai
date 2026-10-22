@@ -5,3 +5,4 @@ psycopg[binary]
 python-dotenv
 pytest
 httpx2
+langgraph
