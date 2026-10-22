@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 import models
 from db import Base, engine, get_db
+from detection import engine as detection_engine
 
 
 @asynccontextmanager
@@ -43,6 +44,20 @@ class TransactionResponse(TransactionCreate):
 
     id: int
     status: str
+    created_at: datetime
+
+
+class AlertResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    transaction_id: int
+    case_id: int | None
+    rule_code: str
+    severity: str
+    status: str
+    description: str
+    evidence: dict[str, Any]
     created_at: datetime
 
 
