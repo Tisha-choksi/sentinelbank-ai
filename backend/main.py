@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -32,6 +33,14 @@ app = FastAPI(
 
 app.include_router(alerts_router)
 app.include_router(investigations_router)
+
+# Local dev only: the Next.js dashboard runs on a different origin/port.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DbSession = Annotated[Session, Depends(get_db)]
 
