@@ -1,0 +1,61 @@
+{
+  "scenario_count": 110,
+  "category_counts": {
+    "high_value_transfer": 5,
+    "high_velocity": 5,
+    "circular_flow": 5,
+    "missing_account_records": 5,
+    "legitimate_unusual_activity": 5,
+    "conflicting_incomplete_evidence": 5,
+    "invalid_citation": 40,
+    "model_failure": 40
+  },
+  "evidence_grounding": {
+    "grounding_rate": 0.9,
+    "unsupported_claim_scenarios": [
+      "conflicting_incomplete_evidence-000",
+      "conflicting_incomplete_evidence-002",
+      "conflicting_incomplete_evidence-003"
+    ]
+  },
+  "citation_validity": {
+    "citation_validity_rate": 1.0,
+    "invalid_citation_examples": [],
+    "hallucination_catch_rate": 1.0
+  },
+  "factual_accuracy": {
+    "facts_hit_rate": 0.7766666666666667,
+    "uncertainty_hit_rate": 0.23333333333333334,
+    "forbidden_claim_violation_count": 0,
+    "forbidden_claim_violation_scenarios": []
+  },
+  "latency_and_reliability": {
+    "median_duration_seconds": 67.94322669999383,
+    "p95_duration_seconds": 96.32386839999526,
+    "timeout_handling_rate": 1.0,
+    "failure_rate_by_category": {
+      "high_value_transfer": 0.0,
+      "high_velocity": 0.0,
+      "circular_flow": 0.0,
+      "missing_account_records": 0.0,
+      "legitimate_unusual_activity": 0.0,
+      "conflicting_incomplete_evidence": 0.6,
+      "invalid_citation": 1.0,
+      "model_failure": 1.0
+    },
+    "unexpected_status_mismatches": [
+      "conflicting_incomplete_evidence-000",
+      "conflicting_incomplete_evidence-002",
+      "conflicting_incomplete_evidence-003"
+    ]
+  },
+  "acceptance_criteria": {
+    "zero_unsupported_citations": false,
+    "zero_invalid_citations_in_successful_reports": true
+  },
+  "run_config": {
+    "model_name": "qwen2.5-coder:7b",
+    "temperature": 0.2,
+    "sample_per_category": 5
+  }
+}
