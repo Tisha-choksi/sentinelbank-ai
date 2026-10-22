@@ -107,6 +107,7 @@ def create_transaction(payload: TransactionCreate, db: DbSession):
             detail=f"Transaction '{payload.transaction_ref}' already exists",
         ) from exc
     db.refresh(transaction)
+    detection_engine.run_detection(db, transaction)
     return transaction
 
 
@@ -114,3 +115,17 @@ def create_transaction(payload: TransactionCreate, db: DbSession):
 def list_transactions(db: DbSession):
     result = db.execute(select(models.Transaction).order_by(models.Transaction.id))
     return result.scalars().all()
+
+
+@app.get("/api/v1/alerts", response_model=list[AlertResponse])
+def list_alerts(db: DbSession):
+    result = db.execute(select(models.Alert).order_by(models.Alert.id))
+    return result.scalars().all()
+
+
+@app.post("/api/v1/detection/run", response_model=list[AlertResponse])
+def run_detection(db: DbSession):
+    """Rerun detection rules across every stored transaction. Existing
+    alerts for a (transaction, rule) pair are never duplicated, so this is
+    safe to call repeatedly."""
+    return detection_engine.run_detection_for_all(db)

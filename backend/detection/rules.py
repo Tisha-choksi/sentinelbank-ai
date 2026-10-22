@@ -108,20 +108,43 @@ def check_circular_flow(
     """TXN_CIRCULAR_FLOW: funds move through a sequence of accounts and
     return to the starting account (e.g. A -> B -> C -> A).
 
+    Detection runs as each transaction is created, so a cycle only becomes
+    visible on its *closing* transaction — the one whose `to_account` is the
+    same account that started the chain. So we search backward in time from
+    `transaction.to_account` (the candidate origin) for a chronological path
+    of earlier transfers that arrives at `transaction.from_account`; if one
+    exists, `transaction` itself closes the loop.
+
     `recent_transactions` must contain every transaction within
     CIRCULAR_LOOKBACK_SECONDS before (and including) `transaction`, used to
     build the account transfer graph.
     """
-    origin = transaction.from_account
+    origin = transaction.to_account
+    target = transaction.from_account
 
     graph: dict[str, list["Transaction"]] = {}
     for t in recent_transactions:
+        if t.id == transaction.id:
+            continue
         graph.setdefault(t.from_account, []).append(t)
 
-    path = _find_cycle_back_to_origin(origin, transaction, graph)
+    # The closing transaction itself is one hop, so the earlier path needs
+    # at least (CIRCULAR_MIN_HOPS - 1) hops to meet the overall minimum.
+    min_path_hops = max(CIRCULAR_MIN_HOPS - 1, 1)
+    max_path_hops = max(CIRCULAR_MAX_HOPS - 1, min_path_hops)
+
+    path = _find_chronological_path(
+        start=origin,
+        target=target,
+        graph=graph,
+        not_after=transaction.created_at,
+        min_hops=min_path_hops,
+        max_hops=max_path_hops,
+    )
     if path is None:
         return None
 
+    full_path = path + [transaction]
     account_path = [origin] + [t.to_account for t in path]
     return AlertCandidate(
         rule_code="TXN_CIRCULAR_FLOW",
@@ -133,52 +156,51 @@ def check_circular_flow(
         ),
         evidence={
             "account_path": account_path,
-            "transaction_refs": [t.transaction_ref for t in path],
-            "hops": len(path),
+            "transaction_refs": [t.transaction_ref for t in full_path],
+            "hops": len(full_path),
         },
     )
 
 
-def _find_cycle_back_to_origin(
-    origin: str,
-    start: "Transaction",
+def _find_chronological_path(
+    start: str,
+    target: str,
     graph: dict[str, list["Transaction"]],
+    not_after,
+    min_hops: int,
+    max_hops: int,
 ) -> list["Transaction"] | None:
-    """Depth-first search for a chronological path of transfers starting at
-    `start` that eventually routes back to `origin`, with at least
-    CIRCULAR_MIN_HOPS transactions and at most CIRCULAR_MAX_HOPS. Each hop's
-    `created_at` must be at or after the previous hop's, so the path
-    represents a plausible sequence of fund movements rather than an
-    arbitrary graph cycle.
+    """Depth-first search for a chronological path of transfers from `start`
+    to `target`, each hop's `created_at` at or after the previous hop's (and
+    never later than `not_after`), with between `min_hops` and `max_hops`
+    transactions. Returns the path, or None if no such path exists.
     """
 
     def dfs(
-        current: "Transaction",
+        current_account: str,
+        last_time,
         path: list["Transaction"],
         visited_accounts: set[str],
     ) -> list["Transaction"] | None:
-        if current.to_account == origin:
-            if len(path) >= CIRCULAR_MIN_HOPS:
-                return path
+        if len(path) >= min_hops and current_account == target:
+            return path
+        if len(path) >= max_hops:
             return None
 
-        if len(path) >= CIRCULAR_MAX_HOPS:
-            return None
-
-        for nxt in graph.get(current.to_account, []):
-            if nxt.id == current.id:
+        for nxt in graph.get(current_account, []):
+            if last_time is not None and nxt.created_at < last_time:
                 continue
-            if nxt.created_at < current.created_at:
+            if nxt.created_at > not_after:
                 continue
-            if nxt.to_account != origin and nxt.to_account in visited_accounts:
+            if nxt.to_account != target and nxt.to_account in visited_accounts:
                 continue
 
             visited_accounts.add(nxt.to_account)
-            result = dfs(nxt, path + [nxt], visited_accounts)
+            result = dfs(nxt.to_account, nxt.created_at, path + [nxt], visited_accounts)
             if result is not None:
                 return result
             visited_accounts.discard(nxt.to_account)
 
         return None
 
-    return dfs(start, [start], {origin, start.to_account})
+    return dfs(start, None, [], {start})
