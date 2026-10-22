@@ -41,7 +41,9 @@ from evaluation.schema import AccountFixture, ScenarioSpec, TransactionFixture
 SEED = 20261022
 SCENARIOS_PER_CATEGORY = 40
 BASE_TIME = datetime(2026, 1, 1, tzinfo=timezone.utc)
-DATASET_PATH = Path(__file__).resolve().parent / "dataset" / "scenarios.jsonl"
+DATASET_PATH = (
+    Path(__file__).resolve().parent / "datasets" / "investigation_scenarios.jsonl"
+)
 
 FORBIDDEN_FRAUD_CLAIMS = [
     "confirmed fraud",
@@ -51,6 +53,43 @@ FORBIDDEN_FRAUD_CLAIMS = [
 ]
 
 FAILURE_MODES = ["timeout", "malformed_json", "wrong_shape"]
+
+# Synonym sets for the v2 uncertainty scorer: a concept counts as surfaced
+# if ANY phrase in its set appears (see evaluation/metrics.py). Keyed by the
+# original v1 literal keyword so every scenario's existing
+# expected_uncertainty_keywords automatically gets an expanded v2 concept
+# with no per-scenario hand-editing.
+UNCERTAINTY_SYNONYM_SETS: dict[str, list[str]] = {
+    "account registry": [
+        "account registry",
+        "unregistered",
+        "not registered",
+        "no entry in the account registry",
+        "simulated account",
+        "cannot be verified",
+        "could not be verified",
+        "ownership or status",
+        "could not confirm",
+        "no record",
+        "not found in the registry",
+    ],
+    "not found in the database": [
+        "not found in the database",
+        "could not be retrieved",
+        "could not be located",
+        "missing from the database",
+        "unable to retrieve",
+        "not available",
+        "no record found",
+        "could not confirm",
+        "record could not be",
+        "does not exist in the",
+    ],
+}
+
+
+def _expand_uncertainty_concepts(keywords: list[str]) -> list[list[str]]:
+    return [UNCERTAINTY_SYNONYM_SETS.get(k, [k]) for k in keywords]
 
 
 # --- plumbing: build a throwaway DB, run real detection, capture the result ---
@@ -155,6 +194,9 @@ def _build_from_rule(
         allowed_transaction_refs=allowed_transaction_refs or [primary_ref],
         allowed_accounts=allowed_accounts or [],
         expected_uncertainty_keywords=expected_uncertainty_keywords or [],
+        expected_uncertainty_concepts=_expand_uncertainty_concepts(
+            expected_uncertainty_keywords or []
+        ),
         forbidden_claim_keywords=forbidden_claim_keywords or list(FORBIDDEN_FRAUD_CLAIMS),
         notes=notes,
     )
@@ -535,6 +577,7 @@ def gen_invalid_citation(rng: random.Random, index: int) -> ScenarioSpec:
             "expected_status": "FAILED",
             "expected_facts": [],
             "expected_uncertainty_keywords": [],
+            "expected_uncertainty_concepts": [],
             "notes": (
                 f"Grounding check must reject the fabricated reference "
                 f"'{fake_ref}' and mark the report FAILED."
@@ -558,6 +601,7 @@ def gen_model_failure(rng: random.Random, index: int) -> ScenarioSpec:
             "expected_status": "FAILED",
             "expected_facts": [],
             "expected_uncertainty_keywords": [],
+            "expected_uncertainty_concepts": [],
             "notes": (
                 f"Phase 2 harness should inject a '{failure}' failure "
                 "instead of calling a real model, and confirm the "
