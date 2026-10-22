@@ -50,8 +50,17 @@ def test_every_scenario_replays_to_the_expected_alert(db_session, dataset):
     """The critical check: rebuild each scenario's DB state independently
     and confirm the real detection engine still produces an alert matching
     the stored rule_code. This is what keeps the dataset's labels honest.
+
+    `conflicting_incomplete_evidence` is excluded on purpose: its stored
+    fixtures are deliberately *missing* a transaction the original alert's
+    evidence referenced (simulating data loss after the fact), so replaying
+    only the stored rows will not re-trigger the same rule -- that's the
+    whole point of the category, and it's checked separately by
+    `test_conflicting_incomplete_evidence_has_a_real_gap`.
     """
     for scenario in dataset:
+        if scenario.category == "conflicting_incomplete_evidence":
+            continue
         for acc in scenario.accounts:
             db_session.merge(models.Account(**acc.model_dump()))
         db_session.commit()
