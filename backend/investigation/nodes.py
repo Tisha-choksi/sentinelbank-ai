@@ -135,6 +135,41 @@ def validation_node(state: InvestigationState) -> dict:
     return {"validation_errors": list(evidence.missing_evidence)}
 
 
+PROMPT_VERSION = "v2-strict-citation-rules"
+
+_STRICT_RULES = """\
+STRICT EVIDENCE AND CITATION RULES
+
+1. You may cite a transaction or account only if it appears
+   in the VERIFIED EVIDENCE section.
+
+2. The KNOWN GAPS / NOT FOUND section is a list of unavailable
+   evidence. It is NOT evidence that may be cited.
+
+3. NEVER copy a transaction reference or account identifier
+   from the KNOWN GAPS / NOT FOUND section into a citation list.
+
+4. If a reference is missing, say that the record could not be
+   retrieved. Do not claim that the underlying transaction
+   did not occur.
+
+5. If evidence is conflicting or incomplete, explicitly state:
+   - What is confirmed
+   - What is uncertain or conflicting
+   - What additional information is needed
+
+6. Do not infer fraud, intent, account ownership, or transaction
+   status without supporting evidence.
+
+7. If the available evidence is insufficient to reach a
+   conclusion, state that the investigation is inconclusive.
+
+8. Output only the required structured JSON.
+
+These instructions do not override the application's independent
+citation validation. Invalid citations must still be rejected."""
+
+
 def _build_prompt(evidence: EvidenceBundle, validation_errors: list[str]) -> str:
     schema_example = {
         "summary": "one paragraph, plain language",
@@ -147,15 +182,14 @@ def _build_prompt(evidence: EvidenceBundle, validation_errors: list[str]) -> str
     }
     lines = [
         "You are a banking fraud investigation assistant.",
-        "Reason ONLY from the evidence below. Never invent a transaction "
-        "reference or account number that is not explicitly listed here.",
-        "Clearly separate facts you can confirm from the evidence, "
-        "hypotheses that are plausible but unconfirmed, and uncertainties "
-        "caused by missing evidence.",
+        "",
+        _STRICT_RULES,
         "",
         f"Alert rule: {evidence.rule_code} (severity: {evidence.severity})",
         f"Alert description: {evidence.alert_description}",
         f"Alert evidence: {json.dumps(evidence.alert_evidence)}",
+        "",
+        "VERIFIED EVIDENCE",
         "",
         "Primary transaction:",
         json.dumps(asdict(evidence.primary_transaction)),
@@ -169,8 +203,11 @@ def _build_prompt(evidence: EvidenceBundle, validation_errors: list[str]) -> str
     if validation_errors:
         lines += [
             "",
-            "Known gaps in the evidence (list these as uncertainties, do "
-            "not guess what they would contain):",
+            "KNOWN GAPS / NOT FOUND",
+            "",
+            "These references were expected but could not be retrieved. "
+            "Treat each as an uncertainty to report, never as a citable "
+            "transaction or account:",
             json.dumps(validation_errors),
         ]
     lines += [
@@ -245,6 +282,7 @@ def make_persistence_node(db: Session):
                 status="FAILED",
                 model_provider=state.get("model_provider", "none"),
                 model_name=state.get("model_name", "none"),
+                prompt_version=PROMPT_VERSION,
                 summary=f"Investigation did not complete: {state['error']}",
                 findings={"error": state["error"]},
                 evidence_snapshot=evidence_snapshot,
@@ -258,6 +296,7 @@ def make_persistence_node(db: Session):
                 status="PENDING_REVIEW",
                 model_provider=state["model_provider"],
                 model_name=state["model_name"],
+                prompt_version=PROMPT_VERSION,
                 summary=findings.summary,
                 findings=findings.model_dump(),
                 evidence_snapshot=evidence_snapshot,
