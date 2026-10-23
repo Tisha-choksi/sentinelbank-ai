@@ -1,4 +1,11 @@
-import type { Alert, Report, ReviewStatus, Transaction } from "./types";
+import type {
+  Alert,
+  EvaluationRunIndexEntry,
+  EvaluationRunSummary,
+  Report,
+  ReviewStatus,
+  Transaction,
+} from "./types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -64,4 +71,9 @@ export const api = {
   health: () => request<{ status: string }>("/health"),
   healthDatabase: () =>
     request<{ status: string; database: string }>("/health/database"),
+
+  listEvaluationRuns: () =>
+    request<EvaluationRunIndexEntry[]>("/api/v1/evaluation/runs"),
+  getEvaluationRun: (runId: string) =>
+    request<EvaluationRunSummary>(`/api/v1/evaluation/runs/${runId}`),
 };

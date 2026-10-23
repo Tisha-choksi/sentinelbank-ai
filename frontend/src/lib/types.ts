@@ -100,3 +100,65 @@ export function isFailedFindings(
 }
 
 export type ReviewStatus = "APPROVED" | "DISMISSED" | "ESCALATED";
+
+// --- Evaluation (offline benchmark artifacts, not live telemetry) ---
+
+export type EvaluationRunIndexEntry = {
+  id: string;
+  label: string;
+  available: boolean;
+  error: string | null;
+  model_name: string | null;
+  prompt_version: string | null;
+  scenario_count: number | null;
+  generated_at: string | null;
+};
+
+export type EvaluationRunSummary = {
+  id: string;
+  label: string;
+  file_name: string;
+  generated_at: string;
+  scope_note: string | null;
+  scenario_count: number;
+  category_counts: Record<string, number>;
+  evidence_grounding: {
+    grounding_rate: number | null;
+    unsupported_claim_scenarios: string[];
+  };
+  citation_validity: {
+    citation_validity_rate: number | null;
+    invalid_citation_examples: string[];
+    hallucination_catch_rate: number | null;
+  };
+  factual_accuracy: {
+    facts_hit_rate: number | null;
+    uncertainty_hit_rate: number | null;
+    uncertainty_hit_rate_v2: number | null;
+    forbidden_claim_violation_count: number;
+    forbidden_claim_violation_scenarios: string[];
+  };
+  latency_and_reliability: {
+    median_duration_seconds: number | null;
+    p95_duration_seconds: number | null;
+    operational_timeout_rate: number | null;
+    operational_timeout_rate_label: string | null;
+    failure_rate_by_category: Record<string, number>;
+    unexpected_status_mismatches: string[];
+    timeout_handling_rate: number | null;
+  };
+  system_resilience: {
+    adversarial_rejection_rate: number | null;
+    hallucination_catch_rate: number | null;
+  } | null;
+  acceptance_criteria: {
+    zero_unsupported_citations: boolean | null;
+    zero_invalid_citations_in_successful_reports: boolean | null;
+  } | null;
+  run_config: {
+    model_name: string | null;
+    temperature: number | null;
+    sample_per_category: number | null;
+    prompt_version: string | null;
+  };
+};
