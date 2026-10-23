@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import models
+from auth.dependencies import CurrentUser, require_role
 from db import get_db
 from detection import service
 
@@ -37,14 +38,15 @@ class AlertResponse(BaseModel):
 
 
 @router.get("/alerts", response_model=list[AlertResponse])
-def list_alerts(db: DbSession):
+def list_alerts(db: DbSession, _user: CurrentUser):
     result = db.execute(select(models.Alert).order_by(models.Alert.id))
     return result.scalars().all()
 
 
 @router.post("/detection/run", response_model=list[AlertResponse])
-def run_detection(db: DbSession):
+def run_detection(db: DbSession, _user: Annotated[models.User, Depends(require_role("ADMIN"))]):
     """Rerun detection rules across every stored transaction. Existing
     alerts for a (transaction, rule) pair are never duplicated, so this is
-    safe to call repeatedly."""
+    safe to call repeatedly. ADMIN-only: a fleet-wide rescan is a bulk
+    operation, not a routine analyst action."""
     return service.run_detection_for_all(db)
