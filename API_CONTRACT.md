@@ -3,7 +3,7 @@
 This document describes the **actual, implemented** request/response shapes of the FastAPI backend, as of:
 
 - Model/prompt freeze: `llama3.1:8b`, prompt version `v2-strict-citation-rules`
-- Backend source of truth: `backend/main.py`, `backend/api/alerts.py`, `backend/api/investigations.py`
+- Backend source of truth: `backend/main.py`, `backend/api/alerts.py`, `backend/api/investigations.py`, `backend/api/evaluation.py`
 
 Nothing here is aspirational — every field listed is pulled directly from the Pydantic response models in the code. If the frontend needs a field that isn't listed, it doesn't exist yet; extend the backend first rather than guessing.
 
@@ -174,6 +174,65 @@ Request body:
 
 ---
 
+## Evaluation (offline benchmark artifacts — NOT live telemetry)
+
+Serves validated summaries of the saved investigation-evaluation benchmark runs in `backend/evaluation/results/`. These are timestamped snapshots of offline runs (`python -m evaluation.run_eval`), not continuous production monitoring — `generated_at` is the result file's last-modified time, not "now."
+
+The backend never accepts a file path from the client: only the fixed set of runs named in `api/evaluation.py`'s `KNOWN_RUNS` can ever be served, and every file is parsed and validated (required fields, rates in `[0, 1]`) before being returned.
+
+### `GET /api/v1/evaluation/runs`
+200 — every known run, available or not, so a missing/corrupt artifact shows up as a clear per-row reason instead of vanishing from the list:
+```ts
+{
+  id: string;                  // e.g. "llama3.1_8b_v2"
+  label: string;                 // human-readable, e.g. "Llama 3.1 8B -- v2 strict-citation-rules prompt (frozen default)"
+  available: boolean;
+  error: string | null;           // set when available is false
+  model_name: string | null;
+  prompt_version: string | null;
+  scenario_count: number | null;
+  generated_at: string | null;     // ISO 8601, file mtime
+}[]
+```
+
+### `GET /api/v1/evaluation/runs/{run_id}`
+200 — the full validated summary for one run (shape matches `evaluation/metrics.py`'s `aggregate()` output, plus `id`/`label`/`file_name`/`generated_at`):
+```ts
+{
+  id: string;
+  label: string;
+  file_name: string;
+  generated_at: string;
+  scope_note: string | null;
+  scenario_count: number;
+  category_counts: Record<string, number>;
+  evidence_grounding: { grounding_rate: number | null; unsupported_claim_scenarios: string[] };
+  citation_validity: { citation_validity_rate: number | null; invalid_citation_examples: string[]; hallucination_catch_rate: number | null };
+  factual_accuracy: {
+    facts_hit_rate: number | null;
+    uncertainty_hit_rate: number | null;       // v1 scorer: literal-phrase match on `uncertainties` only
+    uncertainty_hit_rate_v2: number | null;      // v2 scorer: synonym-aware, checks uncertainties+recommended_checks+summary -- null on runs captured before v2 existed, NOT zero
+    forbidden_claim_violation_count: number;
+    forbidden_claim_violation_scenarios: string[];
+  };
+  latency_and_reliability: {
+    median_duration_seconds: number | null;
+    p95_duration_seconds: number | null;
+    operational_timeout_rate: number | null;       // genuine failures among the real-model-call scenarios only
+    operational_timeout_rate_label: string | null;   // e.g. "0/30 live calls"
+    failure_rate_by_category: Record<string, number>;
+    unexpected_status_mismatches: string[];
+    timeout_handling_rate: number | null;             // legacy v1 field name, only non-null on pre-fix artifacts
+  };
+  system_resilience: { adversarial_rejection_rate: number | null; hallucination_catch_rate: number | null } | null;
+  acceptance_criteria: { zero_unsupported_citations: boolean | null; zero_invalid_citations_in_successful_reports: boolean | null } | null;
+  run_config: { model_name: string | null; temperature: number | null; sample_per_category: number | null; prompt_version: string | null };
+}
+```
+404 if `run_id` is unknown or its file is missing. 422 if the file exists but is malformed JSON or fails validation (detail explains which).
+
+---
+
 ## Explicitly NOT implemented yet (do not build frontend screens assuming these exist)
 
 - No `GET /api/v1/accounts` or account-detail endpoint (the `accounts` table exists in the DB but has no API surface).
@@ -182,7 +241,6 @@ Request body:
 - No endpoint to fetch a single alert or transaction by id (`GET /api/v1/alerts/{id}`, `GET /api/v1/transactions/{id}` do not exist — only list and the investigation-report endpoints are scoped by id).
 - No pagination, filtering, sorting, or search on any list endpoint.
 - No authentication/authorization on any endpoint.
-- No evaluation-metrics endpoint — `evaluation/results/*.json` are local files, not served over HTTP.
 
 ---
 

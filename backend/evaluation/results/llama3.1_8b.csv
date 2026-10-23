@@ -1,0 +1,150 @@
+scenario_id,category,expected_status,actual_status,status_matches_expected,duration_seconds,facts_hit,facts_total,uncertainty_hit,uncertainty_total,forbidden_claim_violated,error
+high_value_transfer-000,high_value_transfer,PENDING_REVIEW,PENDING_REVIEW,True,81.245,2,2,0,0,False,
+high_value_transfer-001,high_value_transfer,PENDING_REVIEW,PENDING_REVIEW,True,99.848,2,2,1,1,False,
+high_value_transfer-002,high_value_transfer,PENDING_REVIEW,PENDING_REVIEW,True,51.088,2,2,0,0,False,
+high_value_transfer-003,high_value_transfer,PENDING_REVIEW,PENDING_REVIEW,True,53.953,2,2,0,0,False,
+high_value_transfer-004,high_value_transfer,PENDING_REVIEW,PENDING_REVIEW,True,43.009,2,2,1,1,False,
+high_velocity-000,high_velocity,PENDING_REVIEW,PENDING_REVIEW,True,103.159,2,2,0,0,False,
+high_velocity-001,high_velocity,PENDING_REVIEW,PENDING_REVIEW,True,106.062,2,2,1,1,False,
+high_velocity-002,high_velocity,PENDING_REVIEW,PENDING_REVIEW,True,106.711,2,2,0,0,False,
+high_velocity-003,high_velocity,PENDING_REVIEW,PENDING_REVIEW,True,82.962,2,2,0,0,False,
+high_velocity-004,high_velocity,PENDING_REVIEW,PENDING_REVIEW,True,79.256,2,2,0,0,False,
+circular_flow-000,circular_flow,PENDING_REVIEW,PENDING_REVIEW,True,72.086,5,5,0,0,False,
+circular_flow-001,circular_flow,PENDING_REVIEW,PENDING_REVIEW,True,70.686,4,4,0,0,False,
+circular_flow-002,circular_flow,PENDING_REVIEW,PENDING_REVIEW,True,88.644,4,4,1,1,False,
+circular_flow-003,circular_flow,PENDING_REVIEW,PENDING_REVIEW,True,88.602,3,3,1,1,False,
+circular_flow-004,circular_flow,PENDING_REVIEW,PENDING_REVIEW,True,70.59,2,5,0,0,False,
+missing_account_records-000,missing_account_records,PENDING_REVIEW,PENDING_REVIEW,True,48.87,2,2,1,1,False,
+missing_account_records-001,missing_account_records,PENDING_REVIEW,PENDING_REVIEW,True,139.463,2,2,1,1,False,
+missing_account_records-002,missing_account_records,PENDING_REVIEW,PENDING_REVIEW,True,82.049,4,4,1,1,False,
+missing_account_records-003,missing_account_records,PENDING_REVIEW,PENDING_REVIEW,True,48.765,2,2,1,1,False,
+missing_account_records-004,missing_account_records,PENDING_REVIEW,PENDING_REVIEW,True,87.343,2,2,1,1,False,
+legitimate_unusual_activity-000,legitimate_unusual_activity,PENDING_REVIEW,PENDING_REVIEW,True,46.046,1,1,0,0,False,
+legitimate_unusual_activity-001,legitimate_unusual_activity,PENDING_REVIEW,PENDING_REVIEW,True,45.647,1,1,0,0,False,
+legitimate_unusual_activity-002,legitimate_unusual_activity,PENDING_REVIEW,PENDING_REVIEW,True,65.484,1,1,0,0,False,
+legitimate_unusual_activity-003,legitimate_unusual_activity,PENDING_REVIEW,PENDING_REVIEW,True,39.732,1,1,0,0,False,
+legitimate_unusual_activity-004,legitimate_unusual_activity,PENDING_REVIEW,PENDING_REVIEW,True,42.33,1,1,0,0,False,
+conflicting_incomplete_evidence-000,conflicting_incomplete_evidence,PENDING_REVIEW,PENDING_REVIEW,True,78.984,5,5,1,1,False,
+conflicting_incomplete_evidence-001,conflicting_incomplete_evidence,PENDING_REVIEW,FAILED,False,91.787,0,2,0,2,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-VEL-7501-0']
+conflicting_incomplete_evidence-002,conflicting_incomplete_evidence,PENDING_REVIEW,FAILED,False,60.085,0,3,0,2,False,"Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-CYC-7502-0', 'TXN-CYC-7502-1', 'ACC-CYC-7502-B']"
+conflicting_incomplete_evidence-003,conflicting_incomplete_evidence,PENDING_REVIEW,PENDING_REVIEW,True,116.715,2,2,1,1,False,
+conflicting_incomplete_evidence-004,conflicting_incomplete_evidence,PENDING_REVIEW,FAILED,False,109.78,0,2,0,2,False,"Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-VEL-7504-0', 'TXN-VEL-7504-3']"
+invalid_citation-000,invalid_citation,FAILED,FAILED,True,0.02,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-000']
+invalid_citation-001,invalid_citation,FAILED,FAILED,True,0.017,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-001']
+invalid_citation-002,invalid_citation,FAILED,FAILED,True,0.015,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-002']
+invalid_citation-003,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-003']
+invalid_citation-004,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-004']
+invalid_citation-005,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-005']
+invalid_citation-006,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-006']
+invalid_citation-007,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-007']
+invalid_citation-008,invalid_citation,FAILED,FAILED,True,0.018,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-008']
+invalid_citation-009,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-009']
+invalid_citation-010,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-010']
+invalid_citation-011,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-011']
+invalid_citation-012,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-012']
+invalid_citation-013,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-013']
+invalid_citation-014,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-014']
+invalid_citation-015,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-015']
+invalid_citation-016,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-016']
+invalid_citation-017,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-017']
+invalid_citation-018,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-018']
+invalid_citation-019,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-019']
+invalid_citation-020,invalid_citation,FAILED,FAILED,True,0.019,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-020']
+invalid_citation-021,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-021']
+invalid_citation-022,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-022']
+invalid_citation-023,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-023']
+invalid_citation-024,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-024']
+invalid_citation-025,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-025']
+invalid_citation-026,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-026']
+invalid_citation-027,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-027']
+invalid_citation-028,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-028']
+invalid_citation-029,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-029']
+invalid_citation-030,invalid_citation,FAILED,FAILED,True,0.013,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-030']
+invalid_citation-031,invalid_citation,FAILED,FAILED,True,0.014,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-031']
+invalid_citation-032,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-032']
+invalid_citation-033,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-033']
+invalid_citation-034,invalid_citation,FAILED,FAILED,True,0.018,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-034']
+invalid_citation-035,invalid_citation,FAILED,FAILED,True,0.135,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-035']
+invalid_citation-036,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-036']
+invalid_citation-037,invalid_citation,FAILED,FAILED,True,0.012,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-037']
+invalid_citation-038,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-038']
+invalid_citation-039,invalid_citation,FAILED,FAILED,True,0.011,0,0,0,0,False,Model cited evidence that was not actually retrieved (possible hallucination): ['TXN-FAKE-039']
+model_failure-000,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-001,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-002,model_failure,FAILED,FAILED,True,0.027,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-003,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-004,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-005,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-006,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-007,model_failure,FAILED,FAILED,True,0.016,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-008,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-009,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-010,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-011,model_failure,FAILED,FAILED,True,0.013,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-012,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-013,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-014,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-015,model_failure,FAILED,FAILED,True,0.01,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-016,model_failure,FAILED,FAILED,True,0.015,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-017,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-018,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-019,model_failure,FAILED,FAILED,True,0.014,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-020,model_failure,FAILED,FAILED,True,0.018,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-021,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-022,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-023,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-024,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-025,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-026,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-027,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-028,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-029,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-030,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-031,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-032,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-033,model_failure,FAILED,FAILED,True,0.017,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-034,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-035,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-036,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,Model generation failed: simulated timeout
+model_failure-037,model_failure,FAILED,FAILED,True,0.012,0,0,0,0,False,Model generation failed: simulated malformed JSON
+model_failure-038,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,"Model returned a malformed report: 1 validation error for InvestigationFindings
+summary
+  Field required [type=missing, input_value={'unexpected_field': 'not a valid report shape'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing"
+model_failure-039,model_failure,FAILED,FAILED,True,0.011,0,0,0,0,False,Model generation failed: simulated timeout
