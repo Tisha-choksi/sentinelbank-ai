@@ -10,7 +10,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 import models
+from api.alerts import router as alerts_router
 from db import Base, engine, get_db
+from detection import service
 
 
 @asynccontextmanager
@@ -26,6 +28,8 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 )
+
+app.include_router(alerts_router)
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -92,6 +96,7 @@ def create_transaction(payload: TransactionCreate, db: DbSession):
             detail=f"Transaction '{payload.transaction_ref}' already exists",
         ) from exc
     db.refresh(transaction)
+    service.run_detection(db, transaction)
     return transaction
 
 
