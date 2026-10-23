@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -302,13 +303,71 @@ class InvestigationReport(Base):
         String(128),
         nullable=True,
     )
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     alert: Mapped["Alert"] = relationship(back_populates="reports")
+    reviewer: Mapped["User | None"] = relationship()
 
     __table_args__ = (
         CheckConstraint(
             "status IN ('PENDING_REVIEW', 'APPROVED', 'DISMISSED', 'ESCALATED', 'FAILED')",
             name="ck_investigation_reports_status",
+        ),
+    )
+
+
+class User(Base):
+    """Analysts and administrators. There is no self-registration --
+    accounts are provisioned (seeded, for this prototype) internally, the
+    way real banking staff accounts are, not signed up by anonymous
+    visitors.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    full_name: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+    )
+    hashed_password: Mapped[str] = mapped_column(
+        String(256),
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="ANALYST",
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utcnow,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('ANALYST', 'ADMIN')",
+            name="ck_users_role",
         ),
     )
 
