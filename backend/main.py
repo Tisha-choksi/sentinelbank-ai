@@ -12,15 +12,26 @@ from sqlalchemy.orm import Session
 
 import models
 from api.alerts import router as alerts_router
+from api.auth import router as auth_router
+from api.evaluation import router as evaluation_router
 from api.investigations import router as investigations_router
-from db import Base, engine, get_db
+from auth.dependencies import CurrentUser
+from db import Base, SessionLocal, engine, get_db
+from db_seed import seed_demo_users
 from detection import service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Prototype setup: create tables that do not exist yet.
+    # Prototype setup: create tables that do not exist yet. Schema changes
+    # are tracked by Alembic migrations (see migrations/) -- this is only a
+    # safety net for a fresh dev DB, not the source of truth.
     Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        seed_demo_users(db)
+    finally:
+        db.close()
     yield
 
 
@@ -31,8 +42,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(auth_router)
 app.include_router(alerts_router)
 app.include_router(investigations_router)
+app.include_router(evaluation_router)
 
 # Local dev only: the Next.js dashboard runs on a different origin/port.
 app.add_middleware(
@@ -95,7 +108,7 @@ def health_database(db: DbSession):
     response_model=TransactionResponse,
     status_code=201,
 )
-def create_transaction(payload: TransactionCreate, db: DbSession):
+def create_transaction(payload: TransactionCreate, db: DbSession, _user: CurrentUser):
     transaction = models.Transaction(**payload.model_dump())
     db.add(transaction)
     try:
@@ -112,6 +125,6 @@ def create_transaction(payload: TransactionCreate, db: DbSession):
 
 
 @app.get("/api/v1/transactions", response_model=list[TransactionResponse])
-def list_transactions(db: DbSession):
+def list_transactions(db: DbSession, _user: CurrentUser):
     result = db.execute(select(models.Transaction).order_by(models.Transaction.id))
     return result.scalars().all()
