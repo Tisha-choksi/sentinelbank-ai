@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Fixed dark "command center" theme. Values are the validated dark-mode
+   steps from the dataviz skill's reference palette (references/palette.md)
+   -- status colors are reserved for severity/state and never reused for
+   series identity; categorical slots keep their fixed order. */
+:root {
+  --color-surface-page: #0d0d0d;
+  --color-surface-card: #1a1a19;
+  --color-surface-card-raised: #222220;
+  --color-surface-hover: #272623;
+
+  --color-ink-primary: #f0efec;
+  --color-ink-secondary: #c3c2b7;
+  --color-ink-muted: #898781;
+
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-gridline: #2c2c2a;
+  --color-axis: #383835;
+
+  /* status palette: reserved for severity/state, always paired with an
+     icon + label, never color alone */
+  --color-status-good: #0ca30c;
+  --color-status-warning: #fab219;
+  --color-status-serious: #ec835a;
+  --color-status-critical: #d03b3b;
+
+  /* categorical: fixed order, used for rule_code identity */
+  --color-cat-1: #3987e5; /* blue */
+  --color-cat-2: #d95926; /* orange */
+  --color-cat-3: #199e70; /* aqua */
+
+  /* sequential: single hue, light -> dark, for magnitude */
+  --color-seq-200: #9ec5f4;
+  --color-seq-400: #3987e5;
+  --color-seq-600: #184f95;
+}
+
+@theme inline {
+  --color-surface-page: var(--color-surface-page);
+  --color-surface-card: var(--color-surface-card);
+  --color-surface-card-raised: var(--color-surface-card-raised);
+  --color-surface-hover: var(--color-surface-hover);
+
+  --color-ink-primary: var(--color-ink-primary);
+  --color-ink-secondary: var(--color-ink-secondary);
+  --color-ink-muted: var(--color-ink-muted);
+
+  --color-border: var(--color-border);
+  --color-gridline: var(--color-gridline);
+  --color-axis: var(--color-axis);
+
+  --color-status-good: var(--color-status-good);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-serious: var(--color-status-serious);
+  --color-status-critical: var(--color-status-critical);
+
+  --color-cat-1: var(--color-cat-1);
+  --color-cat-2: var(--color-cat-2);
+  --color-cat-3: var(--color-cat-3);
+
+  --color-seq-200: var(--color-seq-200);
+  --color-seq-400: var(--color-seq-400);
+  --color-seq-600: var(--color-seq-600);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--color-surface-page);
+  color: var(--color-ink-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* tabular figures for anything that must align vertically (tables, axis ticks) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
