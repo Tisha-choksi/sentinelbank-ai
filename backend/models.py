@@ -270,6 +270,11 @@ class InvestigationReport(Base):
         String(128),
         nullable=False,
     )
+    prompt_version: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="unspecified",
+    )
     summary: Mapped[str] = mapped_column(
         String(2048),
         nullable=False,

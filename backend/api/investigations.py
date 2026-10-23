@@ -33,6 +33,7 @@ class ReportResponse(BaseModel):
     status: str
     model_provider: str
     model_name: str
+    prompt_version: str
     summary: str
     findings: dict[str, Any]
     evidence_snapshot: dict[str, Any]
