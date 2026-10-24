@@ -22,6 +22,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
+from auth.dependencies import CurrentUser
+
 router = APIRouter(prefix="/api/v1/evaluation", tags=["evaluation"])
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "evaluation" / "results"
@@ -188,7 +190,7 @@ def _load_run(run_id: str) -> EvaluationRunSummary:
 
 
 @router.get("/runs", response_model=list[EvaluationRunIndexEntry])
-def list_runs():
+def list_runs(_user: CurrentUser):
     """Every known benchmark run, available or not, so the UI can render
     full history with a clear reason for anything missing/malformed.
     """
@@ -221,5 +223,5 @@ def list_runs():
 
 
 @router.get("/runs/{run_id}", response_model=EvaluationRunSummary)
-def get_run(run_id: str):
+def get_run(run_id: str, _user: CurrentUser):
     return _load_run(run_id)
