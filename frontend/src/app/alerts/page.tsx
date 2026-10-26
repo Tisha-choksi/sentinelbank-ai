@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/AuthProvider";
 import type { Alert } from "@/lib/types";
 import { useAsync } from "@/lib/useAsync";
 import { PageHeader } from "@/components/PageHeader";
@@ -21,6 +22,8 @@ function matchesQuery(alert: Alert, query: string): boolean {
 }
 
 function AlertsTable({ alerts }: { alerts: Alert[] }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [query, setQuery] = useState("");
   const [runningDetection, setRunningDetection] = useState(false);
   const [detectionMessage, setDetectionMessage] = useState<string | null>(null);
@@ -59,13 +62,16 @@ function AlertsTable({ alerts }: { alerts: Alert[] }) {
           onChange={(e) => setQuery(e.target.value)}
           className="w-full max-w-md rounded-md border border-border bg-surface-card px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-cat-1"
         />
-        <button
-          onClick={handleRunDetection}
-          disabled={runningDetection}
-          className="shrink-0 rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-ink-primary hover:bg-surface-hover disabled:opacity-50"
-        >
-          {runningDetection ? "Running..." : "Rerun detection"}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={handleRunDetection}
+            disabled={runningDetection}
+            className="shrink-0 rounded-md border border-border bg-surface-card px-3 py-2 text-sm font-medium text-ink-primary hover:bg-surface-hover disabled:opacity-50"
+            title="Admin-only: rescans every stored transaction"
+          >
+            {runningDetection ? "Running..." : "Rerun detection"}
+          </button>
+        )}
         <span className="text-sm text-ink-muted">
           {filtered.length} of {alerts.length}
         </span>
