@@ -107,6 +107,7 @@ export type Report = {
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
+  reviewed_by_user_id: number | null;
 };
 
 export function isFailedFindings(
