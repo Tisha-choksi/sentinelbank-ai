@@ -1,18 +1,17 @@
 """Tests for the read-only evaluation API (api/evaluation.py). These never
 touch the real evaluation/results/*.json artifacts -- KNOWN_RUNS and
-RESULTS_DIR are monkeypatched to point at hermetic fixture files per test,
-so the real benchmark history can't be read, mutated, or depended on here.
+RESULTS_DIR are monkeypatched to point at hermetic fixture files per test.
+Routes now require authentication, so each test logs in through the
+isolated `api_client` fixture rather than hitting the real Postgres DB.
 """
 
 import json
 
 import pytest
-from fastapi.testclient import TestClient
 
 import api.evaluation as evaluation_api
-from main import app
-
-client = TestClient(app)
+import models
+from auth.security import hash_password
 
 VALID_RESULT = {
     "scope_note": "test scope note",
@@ -61,6 +60,34 @@ def results_dir(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture()
+def authed(api_client):
+    """An (client, headers) pair: a user exists in the isolated test DB and
+    is logged in, so evaluation routes (now auth-required) are reachable."""
+    client, session_factory = api_client
+    db = session_factory()
+    try:
+        db.add(
+            models.User(
+                email="eval-test@sentinelbank.ai",
+                full_name="Eval Test User",
+                hashed_password=hash_password("EvalTestPass123!"),
+                role="ANALYST",
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "eval-test@sentinelbank.ai", "password": "EvalTestPass123!"},
+    )
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    return client, {"Authorization": f"Bearer {token}"}
+
+
 def _write(dir_, name: str, content: str) -> None:
     (dir_ / name).write_text(content, encoding="utf-8")
 
@@ -69,14 +96,23 @@ def _set_known_runs(monkeypatch, runs: dict):
     monkeypatch.setattr(evaluation_api, "KNOWN_RUNS", runs)
 
 
+class TestAuthRequired:
+    def test_list_runs_requires_authentication(self, results_dir, monkeypatch, api_client):
+        client, _ = api_client
+        _set_known_runs(monkeypatch, {})
+        res = client.get("/api/v1/evaluation/runs")
+        assert res.status_code == 401
+
+
 class TestValidResult:
-    def test_list_runs_returns_available_entry(self, results_dir, monkeypatch):
+    def test_list_runs_returns_available_entry(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _write(results_dir, "good.json", json.dumps(VALID_RESULT))
         _set_known_runs(
             monkeypatch, {"good": {"file": "good.json", "label": "Good Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs")
+        res = client.get("/api/v1/evaluation/runs", headers=headers)
         assert res.status_code == 200
         [entry] = res.json()
         assert entry["available"] is True
@@ -86,13 +122,14 @@ class TestValidResult:
         assert entry["scenario_count"] == 10
         assert entry["generated_at"] is not None
 
-    def test_get_run_returns_full_validated_summary(self, results_dir, monkeypatch):
+    def test_get_run_returns_full_validated_summary(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _write(results_dir, "good.json", json.dumps(VALID_RESULT))
         _set_known_runs(
             monkeypatch, {"good": {"file": "good.json", "label": "Good Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs/good")
+        res = client.get("/api/v1/evaluation/runs/good", headers=headers)
         assert res.status_code == 200
         body = res.json()
         assert body["id"] == "good"
@@ -100,7 +137,8 @@ class TestValidResult:
         assert body["evidence_grounding"]["grounding_rate"] == 0.9
         assert body["run_config"]["model_name"] == "test-model"
 
-    def test_server_derived_fields_win_over_file_contents(self, results_dir, monkeypatch):
+    def test_server_derived_fields_win_over_file_contents(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         poisoned = dict(VALID_RESULT)
         poisoned["id"] = "not-the-real-id"
         poisoned["label"] = "not the real label"
@@ -109,64 +147,70 @@ class TestValidResult:
             monkeypatch, {"good": {"file": "good.json", "label": "Good Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs/good")
+        res = client.get("/api/v1/evaluation/runs/good", headers=headers)
         assert res.status_code == 200
         assert res.json()["id"] == "good"
         assert res.json()["label"] == "Good Run"
 
 
 class TestMissingFile:
-    def test_unlisted_file_marks_run_unavailable_in_index(self, results_dir, monkeypatch):
+    def test_unlisted_file_marks_run_unavailable_in_index(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _set_known_runs(
             monkeypatch,
             {"ghost": {"file": "does-not-exist.json", "label": "Ghost Run"}},
         )
 
-        res = client.get("/api/v1/evaluation/runs")
+        res = client.get("/api/v1/evaluation/runs", headers=headers)
         assert res.status_code == 200
         [entry] = res.json()
         assert entry["available"] is False
         assert "not available" in entry["error"].lower()
 
-    def test_missing_file_detail_returns_404(self, results_dir, monkeypatch):
+    def test_missing_file_detail_returns_404(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _set_known_runs(
             monkeypatch,
             {"ghost": {"file": "does-not-exist.json", "label": "Ghost Run"}},
         )
 
-        res = client.get("/api/v1/evaluation/runs/ghost")
+        res = client.get("/api/v1/evaluation/runs/ghost", headers=headers)
         assert res.status_code == 404
 
-    def test_unknown_run_id_returns_404(self, results_dir, monkeypatch):
+    def test_unknown_run_id_returns_404(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _set_known_runs(monkeypatch, {})
-        res = client.get("/api/v1/evaluation/runs/totally-made-up")
+        res = client.get("/api/v1/evaluation/runs/totally-made-up", headers=headers)
         assert res.status_code == 404
 
 
 class TestMalformedJson:
-    def test_malformed_json_marked_unavailable_in_index(self, results_dir, monkeypatch):
+    def test_malformed_json_marked_unavailable_in_index(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _write(results_dir, "bad.json", "{not valid json,,,")
         _set_known_runs(
             monkeypatch, {"bad": {"file": "bad.json", "label": "Bad Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs")
+        res = client.get("/api/v1/evaluation/runs", headers=headers)
         [entry] = res.json()
         assert entry["available"] is False
         assert "json" in entry["error"].lower()
 
-    def test_malformed_json_detail_returns_422(self, results_dir, monkeypatch):
+    def test_malformed_json_detail_returns_422(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _write(results_dir, "bad.json", "{not valid json,,,")
         _set_known_runs(
             monkeypatch, {"bad": {"file": "bad.json", "label": "Bad Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs/bad")
+        res = client.get("/api/v1/evaluation/runs/bad", headers=headers)
         assert res.status_code == 422
 
 
 class TestMetricValidation:
-    def test_out_of_range_rate_is_rejected(self, results_dir, monkeypatch):
+    def test_out_of_range_rate_is_rejected(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         invalid = json.loads(json.dumps(VALID_RESULT))
         invalid["evidence_grounding"]["grounding_rate"] = 1.5  # out of [0, 1]
         _write(results_dir, "bad_metric.json", json.dumps(invalid))
@@ -175,11 +219,12 @@ class TestMetricValidation:
             {"bad_metric": {"file": "bad_metric.json", "label": "Bad Metric Run"}},
         )
 
-        res = client.get("/api/v1/evaluation/runs/bad_metric")
+        res = client.get("/api/v1/evaluation/runs/bad_metric", headers=headers)
         assert res.status_code == 422
         assert "expected evaluation summary shape" in res.json()["detail"].lower()
 
-    def test_missing_required_field_is_rejected(self, results_dir, monkeypatch):
+    def test_missing_required_field_is_rejected(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         invalid = json.loads(json.dumps(VALID_RESULT))
         del invalid["evidence_grounding"]  # required field
         _write(results_dir, "missing_field.json", json.dumps(invalid))
@@ -188,10 +233,11 @@ class TestMetricValidation:
             {"missing_field": {"file": "missing_field.json", "label": "Missing Field Run"}},
         )
 
-        res = client.get("/api/v1/evaluation/runs/missing_field")
+        res = client.get("/api/v1/evaluation/runs/missing_field", headers=headers)
         assert res.status_code == 422
 
-    def test_negative_scenario_count_is_rejected(self, results_dir, monkeypatch):
+    def test_negative_scenario_count_is_rejected(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         invalid = json.loads(json.dumps(VALID_RESULT))
         invalid["scenario_count"] = -5
         _write(results_dir, "negative.json", json.dumps(invalid))
@@ -199,12 +245,13 @@ class TestMetricValidation:
             monkeypatch, {"negative": {"file": "negative.json", "label": "Negative Run"}}
         )
 
-        res = client.get("/api/v1/evaluation/runs/negative")
+        res = client.get("/api/v1/evaluation/runs/negative", headers=headers)
         assert res.status_code == 422
 
 
 class TestMixedAvailability:
-    def test_index_lists_every_known_run_even_when_some_fail(self, results_dir, monkeypatch):
+    def test_index_lists_every_known_run_even_when_some_fail(self, results_dir, monkeypatch, authed):
+        client, headers = authed
         _write(results_dir, "good.json", json.dumps(VALID_RESULT))
         _set_known_runs(
             monkeypatch,
@@ -216,7 +263,7 @@ class TestMixedAvailability:
         )
         _write(results_dir, "corrupt.json", "not json at all")
 
-        res = client.get("/api/v1/evaluation/runs")
+        res = client.get("/api/v1/evaluation/runs", headers=headers)
         assert res.status_code == 200
         by_id = {e["id"]: e for e in res.json()}
         assert set(by_id) == {"good", "missing", "corrupt"}
