@@ -5,7 +5,10 @@
 # complete successfully before this container's dependents start. Baking
 # "run migrations on boot" into the app container makes multi-replica
 # startups race each other against the same database.
-FROM python:3.13-slim
+# Pinned to the exact patch version this app is developed and tested
+# against locally (`python --version`), not just the 3.13 minor line --
+# see requirements.txt for the matching pinned dependency versions.
+FROM python:3.13.1-slim
 
 WORKDIR /app
 

@@ -1,11 +1,83 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg[binary]
-python-dotenv
-pytest
-httpx2
-langgraph
-pyjwt
-alembic
-prometheus-client
+# Pinned to the exact versions this codebase is developed and tested
+# against (Python 3.13.1 locally; see backend/Dockerfile for the matching
+# container base image), so a fresh `pip install -r requirements.txt` -- on
+# a dev machine or inside the Docker build -- can't silently drift to a
+# newer, untested release of anything.
+#
+# To regenerate after deliberately upgrading a dependency:
+#   pip install --upgrade <package>
+#   pip freeze | sort -f   (then reconcile with this file by hand -- see
+#   the uvloop note below, which freeze alone won't get right)
+
+alembic==1.20.1
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.10.19
+charset-normalizer==3.5.2
+click==8.5.0
+distro==1.9.0
+fastapi==0.150.0
+h11==0.16.0
+httpcore==1.0.9
+httpcore2==2.16.0
+httptools==0.9.0
+httpx==0.28.1
+httpx2==2.16.0
+idna==3.20
+iniconfig==2.3.1
+jsonpatch==1.36
+jsonpointer==3.4
+langchain-core==1.6.13
+langchain-protocol==0.0.20
+langgraph==1.2.16
+langgraph-checkpoint==4.3.0
+langgraph-prebuilt==1.1.1
+langgraph-sdk==0.4.8
+langsmith==0.14.12
+Mako==1.4.3
+MarkupSafe==3.0.4
+opentelemetry-api==1.45.1
+orjson==3.13.0
+ormsgpack==1.13.0
+packaging==26.3
+pluggy==1.7.0
+prometheus_client==0.26.0
+psycopg==3.3.6
+psycopg-binary==3.3.6
+pydantic==2.14.1
+pydantic_core==2.50.1
+Pygments==2.21.0
+PyJWT==2.15.1
+pytest==9.1.1
+python-dotenv==1.2.4
+PyYAML==6.0.3
+requests==2.34.2
+requests-toolbelt==1.0.0
+sniffio==1.3.1
+SQLAlchemy==2.1.5
+starlette==1.9.0
+tenacity==9.2.1
+truststore==0.10.5
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+urllib3==2.8.0
+uuid_utils==0.18.0
+uvicorn[standard]==0.54.0
+watchfiles==1.3.0
+websockets==16.1.1
+xxhash==4.0.2
+zstandard==0.25.0
+
+# uvloop has no Windows wheels, so it's marked Linux/Mac-only here. Pinned
+# explicitly (rather than left for uvicorn's "standard" extra to pull in
+# implicitly) so the Linux container doesn't pick up whatever is newest at
+# build time.
+uvloop==0.23.0; sys_platform != "win32"
+
+# Windows-only transitive deps (colorama: click's Windows ANSI shim;
+# tzdata: Python's zoneinfo has no OS tz database to fall back to on
+# Windows) -- harmless but unnecessary on Linux, so they're marked rather
+# than installed unconditionally.
+colorama==0.4.6; sys_platform == "win32"
+tzdata==2026.5; sys_platform == "win32"
