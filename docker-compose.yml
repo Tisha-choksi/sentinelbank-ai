@@ -1,3 +1,17 @@
+x-backend-build: &backend-build
+  context: ./backend
+
+# DATABASE_URL here deliberately overrides whatever's in the root .env --
+# that file's DATABASE_URL points at the HOST port (127.0.0.1:5433) for
+# local `uvicorn`/`alembic` runs outside Docker. Containers on this Compose
+# network reach Postgres via the service name "db" on its internal port
+# 5432 instead, so backend/migrate pin that URL explicitly rather than
+# inheriting the host-oriented value.
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+
 services:
   db:
     image: postgres:16
@@ -22,6 +36,67 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # One-shot: runs the Alembic migrations to completion and exits. backend
+  # waits on `service_completed_successfully` below so the API is never
+  # considered ready against a schema that isn't there yet.
+  migrate:
+    build: *backend-build
+    image: sentinelbank-backend:latest
+    container_name: sentinelbank-migrate
+    environment:
+      <<: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  backend:
+    build: *backend-build
+    image: sentinelbank-backend:latest
+    container_name: sentinelbank-backend
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Checks /health/database (not just /health): this is the readiness
+      # gate the frontend waits on below, so it must prove the DB
+      # connection actually works, not just that the process is alive.
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://127.0.0.1:8000/health/database
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Must be reachable from the user's BROWSER, not from inside the
+        # Compose network -- see the note in frontend/Dockerfile. Override
+        # via the root .env if the API is published on a different
+        # host/port than the default below.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    image: sentinelbank-frontend:latest
+    container_name: sentinelbank-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   sentinelbank_pgdata:
