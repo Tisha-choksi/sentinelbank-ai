@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthProvider";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview" },
@@ -12,6 +13,13 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  function handleLogout() {
+    logout();
+    router.replace("/login");
+  }
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-surface-card">
@@ -51,6 +59,21 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {user && (
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-sm font-medium text-ink-primary">{user.full_name}</p>
+          <p className="text-xs text-ink-muted">
+            {user.email} &middot; {user.role}
+          </p>
+          <button
+            onClick={handleLogout}
+            className="mt-2 w-full rounded-md border border-border px-2 py-1 text-xs text-ink-secondary hover:bg-surface-hover"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
 
       <div className="border-t border-border px-4 py-4 text-xs text-ink-muted">
         <p className="font-medium text-ink-secondary">Prototype notice</p>

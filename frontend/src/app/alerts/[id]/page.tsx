@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/AuthProvider";
 import type { Alert, Report, ReviewStatus } from "@/lib/types";
 import { isFailedFindings } from "@/lib/types";
 import { useAsync } from "@/lib/useAsync";
@@ -63,8 +64,16 @@ function CitationChips({ refs, accounts }: { refs: string[]; accounts: string[] 
   );
 }
 
-function ReviewPanel({ report, onReviewed }: { report: Report; onReviewed: (r: Report) => void }) {
-  const [reviewedBy, setReviewedBy] = useState("");
+function ReviewPanel({
+  report,
+  onReviewed,
+  onConflict,
+}: {
+  report: Report;
+  onReviewed: (r: Report) => void;
+  onConflict: () => void;
+}) {
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState<ReviewStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,16 +81,18 @@ function ReviewPanel({ report, onReviewed }: { report: Report; onReviewed: (r: R
   if (!canReview) return null;
 
   async function submit(status: ReviewStatus) {
-    if (!reviewedBy.trim()) {
-      setError("Enter the reviewing analyst's name first.");
-      return;
-    }
     setSubmitting(status);
     setError(null);
     try {
-      const updated = await api.reviewReport(report.id, status, reviewedBy.trim());
+      const updated = await api.reviewReport(report.id, status);
       onReviewed(updated);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Someone else's review (possibly a concurrent request) already
+        // landed -- refetch rather than show a stale "still pending" panel.
+        onConflict();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Review failed.");
     } finally {
       setSubmitting(null);
@@ -93,13 +104,9 @@ function ReviewPanel({ report, onReviewed }: { report: Report; onReviewed: (r: R
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
         Analyst review
       </p>
-      <input
-        type="text"
-        placeholder="Your name"
-        value={reviewedBy}
-        onChange={(e) => setReviewedBy(e.target.value)}
-        className="mb-2 w-full max-w-xs rounded-md border border-border bg-surface-page px-3 py-1.5 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-cat-1"
-      />
+      <p className="mb-2 text-xs text-ink-muted">
+        Reviewing as <span className="text-ink-secondary">{user?.full_name}</span>
+      </p>
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => submit("APPROVED")}
@@ -130,7 +137,15 @@ function ReviewPanel({ report, onReviewed }: { report: Report; onReviewed: (r: R
   );
 }
 
-function ReportCard({ report, onReviewed }: { report: Report; onReviewed: (r: Report) => void }) {
+function ReportCard({
+  report,
+  onReviewed,
+  onConflict,
+}: {
+  report: Report;
+  onReviewed: (r: Report) => void;
+  onConflict: () => void;
+}) {
   const findings = report.findings;
 
   return (
@@ -174,17 +189,18 @@ function ReportCard({ report, onReviewed }: { report: Report; onReviewed: (r: Re
           {report.reviewed_at && new Date(report.reviewed_at).toLocaleString()}
         </p>
       ) : (
-        <ReviewPanel report={report} onReviewed={onReviewed} />
+        <ReviewPanel report={report} onReviewed={onReviewed} onConflict={onConflict} />
       )}
     </div>
   );
 }
 
-function AlertDetail({ alert, reports, onInvestigated, onReviewed }: {
+function AlertDetail({ alert, reports, onInvestigated, onReviewed, onConflict }: {
   alert: Alert;
   reports: Report[];
   onInvestigated: (r: Report) => void;
   onReviewed: (r: Report) => void;
+  onConflict: () => void;
 }) {
   const [investigating, setInvestigating] = useState(false);
   const [investigateError, setInvestigateError] = useState<string | null>(null);
@@ -265,7 +281,7 @@ function AlertDetail({ alert, reports, onInvestigated, onReviewed }: {
         ) : (
           <div className="space-y-4">
             {[...reports].reverse().map((r) => (
-              <ReportCard key={r.id} report={r} onReviewed={onReviewed} />
+              <ReportCard key={r.id} report={r} onReviewed={onReviewed} onConflict={onConflict} />
             ))}
           </div>
         )}
@@ -291,6 +307,12 @@ export default function AlertDetailPage() {
   }
   function handleReviewed(updated: Report) {
     setLocalReports(reports.map((r) => (r.id === updated.id ? updated : r)));
+  }
+  function handleConflict() {
+    // Someone else's review already landed (a 409) -- drop any optimistic
+    // local state and pull the real current state from the server.
+    setLocalReports(null);
+    reportsState.refetch();
   }
 
   const alert =
@@ -336,6 +358,7 @@ export default function AlertDetailPage() {
           reports={reports}
           onInvestigated={handleInvestigated}
           onReviewed={handleReviewed}
+          onConflict={handleConflict}
         />
       )}
     </>
