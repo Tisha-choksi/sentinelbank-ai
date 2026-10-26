@@ -5,6 +5,7 @@ db_seed.py), matching how real banking staff accounts are issued.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,6 +17,9 @@ import models
 from auth.dependencies import CurrentUser
 from auth.security import create_access_token, verify_password
 from db import get_db
+from observability.metrics import record_auth_failure
+
+logger = logging.getLogger("sentinelbank.auth")
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -50,10 +54,17 @@ def login(payload: LoginRequest, db: DbSession):
     ).scalar_one_or_none()
 
     # Same generic message whether the email doesn't exist or the password
-    # is wrong -- never reveal which one it was.
+    # is wrong -- never reveal which one it was. The attempted *email* is
+    # safe to log (useful for spotting brute-force/enumeration attempts);
+    # the attempted password never is, and never appears in this function.
     if user is None or not user.is_active or not verify_password(
         payload.password, user.hashed_password
     ):
+        logger.warning(
+            "login_failed",
+            extra={"attempted_email": payload.email, "reason": "invalid_credentials"},
+        )
+        record_auth_failure("invalid_credentials")
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     token = create_access_token(subject=str(user.id), role=user.role)
