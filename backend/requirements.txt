@@ -8,3 +8,4 @@ httpx2
 langgraph
 pyjwt
 alembic
+prometheus-client

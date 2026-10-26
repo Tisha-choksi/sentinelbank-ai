@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
@@ -15,10 +15,16 @@ from api.alerts import router as alerts_router
 from api.auth import router as auth_router
 from api.evaluation import router as evaluation_router
 from api.investigations import router as investigations_router
-from auth.dependencies import CurrentUser
+from auth.dependencies import CurrentUser, require_role
 from db import Base, SessionLocal, engine, get_db
 from db_seed import seed_demo_users
 from detection import service
+from observability.error_handlers import register_error_handlers
+from observability.logging_config import configure_logging
+from observability.metrics import render_metrics
+from observability.middleware import RequestIDMiddleware
+
+configure_logging()
 
 
 @asynccontextmanager
@@ -42,6 +48,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_error_handlers(app)
+
 app.include_router(auth_router)
 app.include_router(alerts_router)
 app.include_router(investigations_router)
@@ -54,6 +62,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Added after CORS so it's the OUTERMOST middleware (Starlette wraps in
+# reverse add-order) -- every request gets a request_id and a logged/
+# measured outcome, including CORS preflight requests.
+app.add_middleware(RequestIDMiddleware)
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -89,6 +101,19 @@ def health():
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics(_admin: Annotated[models.User, Depends(require_role("ADMIN"))]):
+    """Live request-count/latency/auth-failure counters for this running
+    process, in Prometheus text format -- see observability/metrics.py.
+    Gated behind ADMIN auth as the safe default for a prototype with no
+    separate internal network; a real deployment would instead run this on
+    an internal-only port/network that a Prometheus scraper (which
+    typically carries no user JWT) can reach without per-scrape login.
+    """
+    body, content_type = render_metrics()
+    return Response(content=body, media_type=content_type)
 
 
 @app.get("/health/database")
