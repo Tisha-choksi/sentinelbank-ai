@@ -1,9 +1,21 @@
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+# Make `import models`, `import db` etc. resolve the same way they do when
+# the app itself runs, regardless of the working directory `alembic` is
+# invoked from.
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
+
+import models  # noqa: E402,F401 -- registers every table on Base.metadata
+from db import Base, DATABASE_URL  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,11 +26,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+# DATABASE_URL already comes from the project's root .env (see db.py) --
+# alembic.ini deliberately leaves sqlalchemy.url blank so the connection
+# string/credentials never need to be duplicated into a second file.
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
