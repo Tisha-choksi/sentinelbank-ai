@@ -20,11 +20,27 @@ import jwt
 
 PBKDF2_ITERATIONS = 260_000
 
+# The literal placeholder text from .env.example -- if this is still the
+# value in use, nobody has actually set up `.env` yet. Anyone can read this
+# string straight out of the public repo, so refusing to start on it is
+# the one guardrail that can't be skipped by forgetting a step: it would
+# otherwise let a half-configured checkout run with a secret everyone
+# already knows, silently turning the demo accounts into exploitable
+# "production" credentials.
+_PLACEHOLDER_JWT_SECRET = "change-me-dev-only-generate-a-real-secret"
+
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
     raise RuntimeError(
         "JWT_SECRET_KEY is missing from the root .env file. Generate one "
         "with `python -c \"import secrets; print(secrets.token_urlsafe(48))\"`."
+    )
+if JWT_SECRET_KEY == _PLACEHOLDER_JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET_KEY is still the placeholder value from .env.example. "
+        "Generate a real secret with "
+        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"` "
+        "and set it in .env before starting the application."
     )
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
